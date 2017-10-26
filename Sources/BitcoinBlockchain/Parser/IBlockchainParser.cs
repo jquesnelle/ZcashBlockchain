@@ -4,11 +4,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Parser
+namespace ZcashBlockchain.Parser
 {
     using System;
     using System.Collections.Generic;
-    using BitcoinBlockchain.Data;
+    using ZcashBlockchain.Data;
 
     /// <summary>
     /// The interface that defines the methods necessary to parse a Bitcoin blockchain.

@@ -7,8 +7,8 @@
     <ProjectGuid>{D6982D0E-59C3-487B-A2C1-60AD7E1D0A32}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BitcoinBlockchain</RootNamespace>
-    <AssemblyName>BitcoinBlockchain</AssemblyName>
+    <RootNamespace>ZcashBlockchain</RootNamespace>
+    <AssemblyName>ZcashBlockchain</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -22,7 +22,7 @@
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>BitcoinBlockchain.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Debug\BitcoinBlockchain.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\ZcashBlockchain.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,7 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\BitcoinBlockchain.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\ZcashBlockchain.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -50,7 +50,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Witness.cs" />
+    <Compile Include="Data\CompressedElement.cs" />
+    <Compile Include="Data\JoinSplit.cs" />
+    <Compile Include="Data\ZcashConstants.cs" />
+    <Compile Include="Data\ZCProof.cs" />
     <Compile Include="Parser\ByteArrayExtension.cs" />
     <Compile Include="Parser\BinaryReaderExtension.cs" />
     <Compile Include="Data\BlockchainFile.cs" />

@@ -4,11 +4,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchainSample
+namespace ZcashBlockchainSample
 {
     using System;
-    using BitcoinBlockchain.Data;
-    using BitcoinBlockchain.Parser;
+    using ZcashBlockchain.Data;
+    using ZcashBlockchain.Parser;
 
     public static class Program
     {
@@ -16,7 +16,7 @@ namespace BitcoinBlockchainSample
         {
             if (args.Length < 1)
             {
-                Console.Error.WriteLine("Invalid command line. Run \"BitcoinBlockchainSample /?\" for usage.");
+                Console.Error.WriteLine("Invalid command line. Run \"ZcashBlockchainSample /?\" for usage.");
             }
             else
             {
@@ -119,12 +119,12 @@ namespace BitcoinBlockchainSample
 
         private static void TypeHelp()
         {
-            Console.WriteLine("BitcoinBlockchainSample");
+            Console.WriteLine("ZcashBlockchainSample");
             Console.WriteLine("    This is a sample/test application used to exercise");
-            Console.WriteLine("    basic functions of the BitcoinBlockchain class library.");
+            Console.WriteLine("    basic functions of the ZcashBlockchain class library.");
             Console.WriteLine();
             Console.WriteLine("USAGE:");
-            Console.WriteLine("    BitcoinBlockchainSample.exe /? | Path_To_Blockchain_Files [First_Block_File]");
+            Console.WriteLine("    ZcashBlockchainSample.exe /? | Path_To_Blockchain_Files [First_Block_File]");
         }
     }
 }

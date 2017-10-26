@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchainSample
+namespace ZcashBlockchainSample
 {
     public class BlockchainStatistics
     {

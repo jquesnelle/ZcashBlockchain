@@ -70,9 +70,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BitcoinBlockchain\BitcoinBlockchain.csproj">
+    <ProjectReference Include="..\BitcoinBlockchain\ZcashBlockchain.csproj">
       <Project>{d6982d0e-59c3-487b-a2c1-60ad7e1d0a32}</Project>
-      <Name>BitcoinBlockchain</Name>
+      <Name>ZcashBlockchain</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

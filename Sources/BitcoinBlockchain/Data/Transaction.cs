@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Data
+namespace ZcashBlockchain.Data
 {
     using System;
     using System.Collections.Generic;
@@ -26,10 +26,7 @@ namespace BitcoinBlockchain.Data
         /// </summary>
         private readonly List<TransactionOutput> transactionOutputs;
 
-        /// <summary>
-        /// Witness data, one for each txin
-        /// </summary>
-        private readonly List<Witness> transactionWitness;
+        private readonly List<JoinSplit> joinSplits;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Transaction" /> class.
@@ -38,11 +35,11 @@ namespace BitcoinBlockchain.Data
         {
             this.transactionInputs = new List<TransactionInput>();
             this.transactionOutputs = new List<TransactionOutput>();
-            this.transactionWitness = new List<Witness>();
+            this.joinSplits = new List<JoinSplit>();
 
             this.Inputs = new ReadOnlyCollection<TransactionInput>(this.transactionInputs);
             this.Outputs = new ReadOnlyCollection<TransactionOutput>(this.transactionOutputs);
-            this.Witness = new ReadOnlyCollection<Witness>(this.transactionWitness);
+            this.JoinSplits = new ReadOnlyCollection<JoinSplit>(this.joinSplits);
         }
 
         /// <summary>
@@ -54,6 +51,8 @@ namespace BitcoinBlockchain.Data
         /// blockchain.info and blockexporer that display hashes in 'big endian' format.
         /// </summary>
         public ByteArray TransactionHash { get; set; }
+
+        public ByteArray JoinSplitSignature { get; set; }
 
         /// <summary>
         /// Gets or sets the transaction version.
@@ -67,6 +66,8 @@ namespace BitcoinBlockchain.Data
         /// </summary>
         public UInt32 TransactionLockTime { get; set; }
 
+        public ByteArray JoinSplitPublicKey { get; set; }
+
         /// <summary>
         /// Gets the read-only collection of transaction inputs in this transaction.
         /// </summary>
@@ -77,15 +78,7 @@ namespace BitcoinBlockchain.Data
         /// </summary>
         public ReadOnlyCollection<TransactionOutput> Outputs { get; private set; }
 
-        /// <summary>
-        /// Gets the read-only collection witness data
-        /// </summary>
-        public ReadOnlyCollection<Witness> Witness { get; private set; }
-
-        /// <summary>
-        /// Gets if the transaction has any any witness data (SegWit)
-        /// </summary>
-        public bool HasWitnessData { get { return transactionWitness.Count != 0; } }
+        public ReadOnlyCollection<JoinSplit> JoinSplits { get; private set; }
 
         /// <summary>
         /// Adds a new input to the list of transaction inputs.
@@ -99,18 +92,6 @@ namespace BitcoinBlockchain.Data
         }
 
         /// <summary>
-        /// Adds witness data to the list of transaction witnesses
-        /// There should be one Witness object for each txin
-        /// </summary>
-        /// <param name="witness">
-        /// The witness that should be added to the list of witnesses.
-        /// </param>
-        public void AddWitness(Witness witness)
-        {
-            this.transactionWitness.Add(witness);
-        }
-
-        /// <summary>
         /// Adds a new output to the list of transaction outputs.
         /// </summary>
         /// <param name="transactionOutput">
@@ -119,6 +100,11 @@ namespace BitcoinBlockchain.Data
         public void AddOutput(TransactionOutput transactionOutput)
         {
             this.transactionOutputs.Add(transactionOutput);
+        }
+
+        public void AddJoinSplit(JoinSplit joinSplit)
+        {
+            this.joinSplits.Add(joinSplit);
         }
     }
 }

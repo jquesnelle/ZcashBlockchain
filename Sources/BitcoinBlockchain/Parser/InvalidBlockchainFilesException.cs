@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Parser
+namespace ZcashBlockchain.Parser
 {
     using System;
     using System.Diagnostics.CodeAnalysis;

@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Data
+namespace ZcashBlockchain.Data
 {
     using System;
 
@@ -47,6 +47,11 @@ namespace BitcoinBlockchain.Data
         public ByteArray MerkleRootHash { get; set; }
 
         /// <summary>
+        /// Gets or sets the 256-bit reserved hash. Currently unused.
+        /// </summary>
+        public ByteArray ReservedHash { get; set; }
+
+        /// <summary>
         /// Gets or sets the block creation timestamp as seconds since 1970-01-01T00:00 UTC.
         /// </summary>
         public UInt32 BlockTimestampUnix { get; set; }
@@ -65,6 +70,11 @@ namespace BitcoinBlockchain.Data
         /// Gets or sets the block nonce. 
         /// See https://en.bitcoin.it/wiki/Nonce.
         /// </summary>
-        public uint BlockNonce { get;  set; }
+        public ByteArray BlockNonce { get;  set; }
+
+        /// <summary>
+        /// Gets or sets the Equihash solution
+        /// </summary>
+        public ByteArray Solution { get; set; }
     }
 }

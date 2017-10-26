@@ -4,10 +4,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Parser
+namespace ZcashBlockchain.Parser
 {
     using System;
-    using BitcoinBlockchain.Data;
+    using ZcashBlockchain.Data;
 
     /// <summary>
     /// The argument of the event raised after the processing of a Bitcoin block completes.

@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Data
+namespace ZcashBlockchain.Data
 {
     using System;
     using System.Diagnostics.CodeAnalysis;

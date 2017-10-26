@@ -4,7 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace BitcoinBlockchain.Parser
+namespace ZcashBlockchain.Parser
 {
     using System;
     using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace BitcoinBlockchain.Parser
     using System.IO;
     using System.Linq;
     using System.Security.Cryptography;
-    using BitcoinBlockchain.Data;
+    using ZcashBlockchain.Data;
 
     /// <summary>
     /// This class implements the IBlockchainParser interface. 
@@ -28,13 +28,14 @@ namespace BitcoinBlockchain.Parser
 
         /// <summary>
         /// The expected size for the block header section of a block.
+        /// Does not include Equihash solution.
         /// </summary>
-        private const int ExpectedBlockHeaderBufferSize = 80;
+        private const int ExpectedBlockHeaderBufferSize = 140;
 
         /// <summary>
         /// The "magic" ID of each Bitcoin block.
         /// </summary>
-        private const UInt32 DefaultBlockMagicId = 0xD9B4BEF9;
+        private const UInt32 DefaultBlockMagicId = 0x6427E924;
 
         /// <summary>
         /// An enumerable providing access to a set of BlockchainFile instances, each representing a Bitcoin blockchain file.
@@ -131,7 +132,7 @@ namespace BitcoinBlockchain.Parser
         }
 
         /// <summary>
-        /// Parses a Bitcoin block header.
+        /// Parses a Zcash block header.
         /// </summary>
         /// <param name="blockMemoryStreamReader">
         /// Provides access to a section of the Bitcoin blockchain file.
@@ -150,26 +151,23 @@ namespace BitcoinBlockchain.Parser
 
             blockHeader.BlockVersion = blockMemoryStreamReader.ReadUInt32();
 
-            switch (blockHeader.BlockVersion)
-            {
-                case 1: case 2: case 3: case 4: // original block version and BIP 34/65/66
-                    break;
-                default: 
-                    if ((blockHeader.BlockVersion & 0xE0000000) != 0x20000000 && // BIP 9 signaling
-                        (blockHeader.BlockVersion & 0x08000000) != 0x08000000    // BitPay adaptive block size HF signaling
-                       ) 
-                        throw new UnknownBlockVersionException(string.Format(CultureInfo.InvariantCulture, "Unknown block version: {0} ({0:X}).", blockHeader.BlockVersion));
-                    break;
-            }
+            if (blockHeader.BlockVersion != 4)
+                throw new UnknownBlockVersionException(string.Format(CultureInfo.InvariantCulture, "Unknown block version: {0} ({0:X}).", blockHeader.BlockVersion));
 
             blockHeader.PreviousBlockHash = new ByteArray(blockMemoryStreamReader.ReadBytes(32).ReverseByteArray());
             blockHeader.MerkleRootHash = new ByteArray(blockMemoryStreamReader.ReadBytes(32).ReverseByteArray());
+            blockHeader.ReservedHash = new ByteArray(blockMemoryStreamReader.ReadBytes(32).ReverseByteArray());
 
             blockHeader.BlockTimestampUnix = blockMemoryStreamReader.ReadUInt32();
             blockHeader.BlockTimestamp = new DateTime(1970, 1, 1).AddSeconds(blockHeader.BlockTimestampUnix);
 
             blockHeader.BlockTargetDifficulty = blockMemoryStreamReader.ReadUInt32();
-            blockHeader.BlockNonce = blockMemoryStreamReader.ReadUInt32();
+            blockHeader.BlockNonce = new ByteArray(blockMemoryStreamReader.ReadBytes(32).ReverseByteArray());
+
+            int equihashStart = (int)blockMemoryStreamReader.BaseStream.Position;
+            int solutionSize = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
+            blockHeader.Solution = new ByteArray(blockMemoryStreamReader.ReadBytes(solutionSize));
+            int equihashSize = (int)blockMemoryStreamReader.BaseStream.Position - equihashStart;
 
             int positionInBaseStreamAfterBlockHeaderEnd = (int)blockMemoryStreamReader.BaseStream.Position;
 
@@ -183,7 +181,7 @@ namespace BitcoinBlockchain.Parser
                 byte[] baseBuffer = blockMemoryStreamReader.GetBuffer();
                 int blockHeaderBufferSize = positionInBaseStreamAfterBlockHeaderEnd - positionInBaseStreamAtBlockHeaderStart;
 
-                if (blockHeaderBufferSize != ExpectedBlockHeaderBufferSize)
+                if (blockHeaderBufferSize != ExpectedBlockHeaderBufferSize + equihashSize)
                 {
                     // We have a problem. The block header should be 80 bytes in size.
                     throw new InvalidBlockchainContentException(string.Format(CultureInfo.InvariantCulture, "Block header buffer size has an invalid length: {0}. Expected: {1}.", blockHeaderBufferSize, ExpectedBlockHeaderBufferSize));
@@ -243,20 +241,77 @@ namespace BitcoinBlockchain.Parser
             return transactionOutput;
         }
 
-        private static Witness ParseWitness(BlockMemoryStreamReader blockMemoryStreamReader)
+        private static CompressedElement ParseCompressedG1Element(BlockMemoryStreamReader blockMemoryStreamReader)
         {
-            Witness witness = new Witness();
+            CompressedElement element = new CompressedElement();
 
-            int witnessStackCount = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
-            witness.WitnessStack = new List<ByteArray>();
+            byte leadingByte = blockMemoryStreamReader.ReadByte();
+            if ((leadingByte & (~1)) != ZcashConstants.G1_PREFIX_MASK)
+                throw new InvalidBlockchainContentException("Unexpected lead byte for G1 point");
 
-            for (int witnessStackIndex = 0; witnessStackIndex < witnessStackCount; witnessStackIndex++)
+            element.YIndicator = (leadingByte & 1) == 1;
+            element.X = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            return element;
+        }
+
+        private static CompressedElement ParseCompressedG2Element(BlockMemoryStreamReader blockMemoryStreamReader)
+        {
+            CompressedElement element = new CompressedElement();
+
+            byte leadingByte = blockMemoryStreamReader.ReadByte();
+            if ((leadingByte & (~1)) != ZcashConstants.G2_PREFIX_MASK)
+                throw new InvalidBlockchainContentException("Unexpected lead byte for G2 point");
+
+            element.YIndicator = (leadingByte & 1) == 1;
+            element.X = new ByteArray(blockMemoryStreamReader.ReadBytes(64));
+
+            return element;
+        }
+
+        private static ZCProof ParseZCProof(BlockMemoryStreamReader blockMemoryStreamReader)
+        {
+            ZCProof proof = new ZCProof
             {
-                int witnessSize = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
-                witness.WitnessStack.Add(new ByteArray(blockMemoryStreamReader.ReadBytes(witnessSize)));
-            }
+                G_A = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_A_Prime = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_B = BlockchainParser.ParseCompressedG2Element(blockMemoryStreamReader),
+                G_B_Prime = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_C = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_C_Prime = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_K = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader),
+                G_H = BlockchainParser.ParseCompressedG1Element(blockMemoryStreamReader)
+            };
 
-            return witness;
+            return proof;
+        }
+
+        private static JoinSplit ParseJoinSplit(BlockMemoryStreamReader blockMemoryStreamReader)
+        {
+            JoinSplit joinSplit = new JoinSplit();
+
+            joinSplit.AmountIn = blockMemoryStreamReader.ReadUInt64();
+            joinSplit.AmountOut = blockMemoryStreamReader.ReadUInt64();
+            joinSplit.Anchor = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            for (int i = 0; i < joinSplit.Nullifiers.Length; ++i)
+                joinSplit.Nullifiers[i] = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            for (int i = 0; i < joinSplit.Commitments.Length; ++i)
+                joinSplit.Commitments[i] = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            joinSplit.EphemeralKey = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+            joinSplit.RandomSeed = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            for (int i = 0; i < joinSplit.MACs.Length; ++i)
+                joinSplit.MACs[i] = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+
+            joinSplit.Proof = BlockchainParser.ParseZCProof(blockMemoryStreamReader);
+
+            for (int i = 0; i < joinSplit.Ciphertexts.Length; ++i)
+                joinSplit.Ciphertexts[i] = new ByteArray(blockMemoryStreamReader.ReadBytes(ZcashConstants.ZC_NOTECIPHERTEXT_SIZE));
+
+            return joinSplit;
         }
 
         /// <summary>
@@ -278,19 +333,6 @@ namespace BitcoinBlockchain.Parser
 
             int inputsCount = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
 
-            bool isSegWit = false;
-            if (inputsCount == 0)
-            {
-                byte flag = blockMemoryStreamReader.ReadByte();
-                if (flag != 0x01)
-                {
-                    throw new InvalidBlockchainContentException(string.Format(CultureInfo.InvariantCulture,
-                        "Unknown transaction serialization. No input transactions, but SegWit flag was {0} instead of 1.", flag));
-                }
-                inputsCount = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
-                isSegWit = true;
-            }
-
             for (int inputIndex = 0; inputIndex < inputsCount; inputIndex++)
             {
                 TransactionInput transactionInput = BlockchainParser.ParseTransactionInput(blockMemoryStreamReader);
@@ -305,19 +347,25 @@ namespace BitcoinBlockchain.Parser
                 transaction.AddOutput(transactionOutput);
             }
 
-            int positionInBaseStreamAfterTxOuts = (int)blockMemoryStreamReader.BaseStream.Position;
-
-            if (isSegWit)
-            {
-                for (int inputIndex = 0; inputIndex < inputsCount; inputIndex++)
-                {
-                    Witness witness = BlockchainParser.ParseWitness(blockMemoryStreamReader);
-                    transaction.AddWitness(witness);
-                }
-            }
-
             // TODO: Need to find out more details about the semantic of TransactionLockTime.
             transaction.TransactionLockTime = blockMemoryStreamReader.ReadUInt32();
+
+            if (transaction.TransactionVersion >= 2)
+            {
+                int joinSplitCount = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
+
+                for (int jsIndex = 0; jsIndex < joinSplitCount; ++jsIndex)
+                {
+                    JoinSplit joinSplit = BlockchainParser.ParseJoinSplit(blockMemoryStreamReader);
+                    transaction.AddJoinSplit(joinSplit);
+                }
+
+                if (joinSplitCount > 0)
+                {
+                    transaction.JoinSplitPublicKey = new ByteArray(blockMemoryStreamReader.ReadBytes(32));
+                    transaction.JoinSplitSignature = new ByteArray(blockMemoryStreamReader.ReadBytes(64));
+                }
+            }
 
             int positionInBaseStreamAfterTransactionEnd = (int)blockMemoryStreamReader.BaseStream.Position;
 
@@ -328,36 +376,10 @@ namespace BitcoinBlockchain.Parser
                 //// Here we take advantage of the fact that the entire block was loaded as an in-memory buffer.
                 //// The base stream of blockMemoryStreamReader is that in-memory buffer.
 
-                byte[] baseBuffer = blockMemoryStreamReader.GetBuffer(), hash1 = null;
+                byte[] baseBuffer = blockMemoryStreamReader.GetBuffer();
 
-                if (isSegWit)
-                {
-                    using (SHA256Managed innerSHA256 = new SHA256Managed())
-                    {
-                        //// SegWit transactions are still identified by their txid, which is double SHA256 of the old
-                        //// serialization format (i.e. no marker, flag, or witness). So, we need to calculate the txid by 
-                        //// recreating the old format as the input to the hash algorithm.
-
-                        // First, the version number
-                        innerSHA256.TransformBlock(baseBuffer, positionInBaseStreamAtTransactionStart, 4, baseBuffer, positionInBaseStreamAtTransactionStart);
-
-                        // Skip the marker and flag (each one byte), then read in txins and txouts (starting with txin count)
-                        int txStart = positionInBaseStreamAtTransactionStart + 6;
-                        int txSize = positionInBaseStreamAfterTxOuts - txStart;
-                        innerSHA256.TransformBlock(baseBuffer, txStart, txSize, baseBuffer, txStart);
-
-                        ///// After the transactions comes the segregated witness data, which is not included in the txid.
-                        ///// The only thing left to add to calcualte the txid is nLockTime located in the last 4 bytes
-                        int lockTimeStart = positionInBaseStreamAfterTransactionEnd - 4;
-                        innerSHA256.TransformFinalBlock(baseBuffer, lockTimeStart, 4);
-                        hash1 = innerSHA256.Hash;
-                    }
-                }
-                else
-                {
-                    int transactionBufferSize = positionInBaseStreamAfterTransactionEnd - positionInBaseStreamAtTransactionStart;
-                    hash1 = sha256.ComputeHash(baseBuffer, positionInBaseStreamAtTransactionStart, transactionBufferSize);
-                }
+                int transactionBufferSize = positionInBaseStreamAfterTransactionEnd - positionInBaseStreamAtTransactionStart;
+                byte[] hash1 = sha256.ComputeHash(baseBuffer, positionInBaseStreamAtTransactionStart, transactionBufferSize);
 
                 transaction.TransactionHash = new ByteArray(sha256.ComputeHash(hash1).ReverseByteArray());
             }
