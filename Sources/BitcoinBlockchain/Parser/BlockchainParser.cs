@@ -6,6 +6,7 @@
 
 namespace ZcashBlockchain.Parser
 {
+    using Base58Check;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
@@ -122,10 +123,27 @@ namespace ZcashBlockchain.Parser
         /// </returns>
         public IEnumerable<Block> ParseBlockchain()
         {
+            UInt64 totalSupply = 0;
+            Int64 sumShielded = 0;
             foreach (BlockchainFile blockchainFile in this.blockchainFilesEnumerator)
             {
-                foreach (Block block in this.ParseBlockchainFile(blockchainFile))
+                var blocks = ParseBlockchainFile(blockchainFile).OrderBy(b => b.BlockHeader.BlockTimestamp);
+
+                foreach (Block block in blocks)
                 {
+                    UInt64 blockReward = 0;
+                    foreach(TransactionOutput t in block.Transactions[0].Outputs)
+                        blockReward += t.OutputValueSatoshi;
+                    totalSupply += blockReward;
+
+                    long shieldedDiff = (long)block.ShieldedIn - (long)block.ShieldedOut;
+                    sumShielded += shieldedDiff;
+
+                    block.ShieldedDiff = shieldedDiff;
+                    block.SumShielded = (ulong)sumShielded;
+                    block.BlockReward = blockReward;
+                    block.TotalSupply = totalSupply;
+
                     yield return block;
                 }
             }
@@ -237,6 +255,7 @@ namespace ZcashBlockchain.Parser
             transactionOutput.OutputValueSatoshi = blockMemoryStreamReader.ReadUInt64();
             int scriptLength = (int)blockMemoryStreamReader.ReadVariableLengthInteger();
             transactionOutput.OutputScript = new ByteArray(blockMemoryStreamReader.ReadBytes(scriptLength));
+            transactionOutput.Address = AddressParser.GetAddressFromOutputScript(transactionOutput.OutputScript.ToArray());
 
             return transactionOutput;
         }

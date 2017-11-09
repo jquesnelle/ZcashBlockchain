@@ -24,5 +24,7 @@ namespace ZcashBlockchain.Data
         /// Gets or sets the output's script.
         /// </summary>
         public ByteArray OutputScript { get; set; }
+
+        public string Address { get; set; }
     }
 }

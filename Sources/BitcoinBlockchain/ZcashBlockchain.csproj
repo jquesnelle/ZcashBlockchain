@@ -41,6 +41,9 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Base58Check, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Base58Check.0.2.0\lib\Net40\Base58Check.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -54,6 +57,7 @@
     <Compile Include="Data\JoinSplit.cs" />
     <Compile Include="Data\ZcashConstants.cs" />
     <Compile Include="Data\ZCProof.cs" />
+    <Compile Include="Parser\AddressParser.cs" />
     <Compile Include="Parser\ByteArrayExtension.cs" />
     <Compile Include="Parser\BinaryReaderExtension.cs" />
     <Compile Include="Data\BlockchainFile.cs" />
@@ -77,6 +81,9 @@
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

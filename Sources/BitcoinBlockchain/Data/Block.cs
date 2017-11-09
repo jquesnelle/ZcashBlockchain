@@ -76,6 +76,64 @@ namespace ZcashBlockchain.Data
         }
 
         /// <summary>
+        /// Gets the total count of the JoinSplits in this block
+        /// </summary>
+        public int JoinSplitsCount
+        {
+            get { return this.Transactions.Sum(t => t.JoinSplits.Count); }
+        }
+
+        public System.UInt64 TransparentSpent
+        {
+            get
+            {
+                System.UInt64 ret = 0;
+                foreach (Transaction t in transactions)
+                {
+                    foreach (TransactionOutput o in t.Outputs)
+                        ret += o.OutputValueSatoshi;
+                }
+                return ret;
+            }
+        }
+
+        public System.UInt64 ShieldedIn
+        {
+            get
+            {
+                System.UInt64 ret = 0;
+                foreach (Transaction t in transactions)
+                {
+                    foreach (JoinSplit js in t.JoinSplits)
+                        ret += js.AmountIn;
+                }
+                return ret;
+            }
+        }
+
+        public System.UInt64 ShieldedOut
+        {
+            get
+            {
+                System.UInt64 ret = 0;
+                foreach (Transaction t in transactions)
+                {
+                    foreach (JoinSplit js in t.JoinSplits)
+                        ret += js.AmountOut;
+                }
+                return ret;
+            }
+        }
+
+        public System.UInt64 TotalSupply { get; set; }
+
+        public System.UInt64 SumShielded { get; set; }
+
+        public System.Int64 ShieldedDiff { get; set; }
+
+        public System.UInt64 BlockReward { get; set; }
+
+        /// <summary>
         /// Adds a new transaction to the list of transactions.
         /// </summary>
         /// <param name="transaction">
