@@ -53,6 +53,7 @@ namespace ZcashBlockchain.Parser
             else if (scriptBytes.Length == 35 && scriptBytes[0] == 0x21 && (scriptBytes[1] == 0x02 || scriptBytes[1] == 0x03)
                 && scriptBytes[34] == 0xac) // P2PK compressed
             {
+                // PUSH33 <PUBKEY> OP_CHECKSIG
                 return GetAddressFromPublicKey(scriptBytes, 1, 33, BASE58PREFIX_PUBKEY_ADDRESS);
             }
 
