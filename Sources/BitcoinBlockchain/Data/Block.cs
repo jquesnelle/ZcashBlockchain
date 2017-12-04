@@ -83,6 +83,9 @@ namespace ZcashBlockchain.Data
             get { return this.Transactions.Sum(t => t.JoinSplits.Count); }
         }
 
+        /// <summary>
+        /// Gets the total amount of transparent coins spent
+        /// </summary>
         public System.UInt64 TransparentSpent
         {
             get
@@ -97,6 +100,9 @@ namespace ZcashBlockchain.Data
             }
         }
 
+        /// <summary>
+        /// Gets the total number of coins entering the shielded pool
+        /// </summary>
         public System.UInt64 ShieldedIn
         {
             get
@@ -111,6 +117,9 @@ namespace ZcashBlockchain.Data
             }
         }
 
+        /// <summary>
+        /// Gets the total number of coins exiting the shielded pool
+        /// </summary>
         public System.UInt64 ShieldedOut
         {
             get
@@ -125,12 +134,14 @@ namespace ZcashBlockchain.Data
             }
         }
 
-        public System.UInt64 TotalSupply { get; set; }
-
-        public System.UInt64 SumShielded { get; set; }
-
+        /// <summary>
+        /// Gets the net difference into the shielded pool
+        /// </summary>
         public System.Int64 ShieldedDiff { get; set; }
 
+        /// <summary>
+        /// The block reward for this block
+        /// </summary>
         public System.UInt64 BlockReward { get; set; }
 
         /// <summary>

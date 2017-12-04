@@ -123,8 +123,6 @@ namespace ZcashBlockchain.Parser
         /// </returns>
         public IEnumerable<Block> ParseBlockchain()
         {
-            UInt64 totalSupply = 0;
-            Int64 sumShielded = 0;
             foreach (BlockchainFile blockchainFile in this.blockchainFilesEnumerator)
             {
                 var blocks = ParseBlockchainFile(blockchainFile).OrderBy(b => b.BlockHeader.BlockTimestamp);
@@ -134,15 +132,11 @@ namespace ZcashBlockchain.Parser
                     UInt64 blockReward = 0;
                     foreach(TransactionOutput t in block.Transactions[0].Outputs)
                         blockReward += t.OutputValueSatoshi;
-                    totalSupply += blockReward;
 
                     long shieldedDiff = (long)block.ShieldedIn - (long)block.ShieldedOut;
-                    sumShielded += shieldedDiff;
 
                     block.ShieldedDiff = shieldedDiff;
-                    block.SumShielded = (ulong)sumShielded;
                     block.BlockReward = blockReward;
-                    block.TotalSupply = totalSupply;
 
                     yield return block;
                 }
