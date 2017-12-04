@@ -2,8 +2,6 @@
 
 This is a fork of https://github.com/ladimolnar/BitcoinBlockchain for Zcash
 
-Related project
-
 ***
 
 **Related project**
